@@ -69,14 +69,14 @@ void ATPSCharacter::Tick(float DeltaSeconds)
 		{
 			if (UWorld* World = GetWorld())
 			{
-				FHitResult HitResult;
+				//FHitResult HitResult;
 				FCollisionQueryParams Params(NAME_None, FCollisionQueryParams::GetUnknownStatId());
 				FVector StartLocation = TopDownCameraComponent->GetComponentLocation();
 				FVector EndLocation = TopDownCameraComponent->GetComponentRotation().Vector() * 2000.0f;
 				Params.AddIgnoredActor(this);
-				World->LineTraceSingleByChannel(HitResult, StartLocation, EndLocation, ECC_Visibility, Params);
-				FQuat SurfaceRotation = HitResult.ImpactNormal.ToOrientationRotator().Quaternion();
-				CursorToWorld->SetWorldLocationAndRotation(HitResult.Location, SurfaceRotation);
+				World->LineTraceSingleByChannel(TraceHitResult, StartLocation, EndLocation, ECC_Visibility, Params);
+				FQuat SurfaceRotation = TraceHitResult.ImpactNormal.ToOrientationRotator().Quaternion();
+				CursorToWorld->SetWorldLocationAndRotation(TraceHitResult.Location, SurfaceRotation);
 			}
 		}
 		else if (APlayerController* PC = Cast<APlayerController>(GetController()))
