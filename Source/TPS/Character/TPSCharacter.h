@@ -56,6 +56,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	bool AimEnabled = false;
 
+	UPROPERTY()
+	FHitResult TraceHitResult;
+
 	UFUNCTION()
 	void InputAxisX(float Value);
 
