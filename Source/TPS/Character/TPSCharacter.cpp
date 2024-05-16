@@ -65,28 +65,18 @@ void ATPSCharacter::Tick(float DeltaSeconds)
 
 	if (CursorToWorld != nullptr)
 	{
-		if (UHeadMountedDisplayFunctionLibrary::IsHeadMountedDisplayEnabled())
+		//if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
 		{
-			if (UWorld* World = GetWorld())
+			if (PC != nullptr)
 			{
-				//FHitResult HitResult;
-				FCollisionQueryParams Params(NAME_None, FCollisionQueryParams::GetUnknownStatId());
-				FVector StartLocation = TopDownCameraComponent->GetComponentLocation();
-				FVector EndLocation = TopDownCameraComponent->GetComponentRotation().Vector() * 2000.0f;
-				Params.AddIgnoredActor(this);
-				World->LineTraceSingleByChannel(TraceHitResult, StartLocation, EndLocation, ECC_Visibility, Params);
-				FQuat SurfaceRotation = TraceHitResult.ImpactNormal.ToOrientationRotator().Quaternion();
-				CursorToWorld->SetWorldLocationAndRotation(TraceHitResult.Location, SurfaceRotation);
+				//FHitResult TraceHitResult;
+				PC->GetHitResultUnderCursor(ECC_Visibility, true, TraceHitResult);
+				FVector CursorFV = TraceHitResult.ImpactNormal;
+				FRotator CursorR = CursorFV.Rotation();
+				CursorToWorld->SetWorldLocation(TraceHitResult.Location);
+				CursorToWorld->SetWorldRotation(CursorR);
 			}
-		}
-		else if (APlayerController* PC = Cast<APlayerController>(GetController()))
-		{
-			//FHitResult TraceHitResult;
-			PC->GetHitResultUnderCursor(ECC_Visibility, true, TraceHitResult);
-			FVector CursorFV = TraceHitResult.ImpactNormal;
-			FRotator CursorR = CursorFV.Rotation();
-			CursorToWorld->SetWorldLocation(TraceHitResult.Location);
-			CursorToWorld->SetWorldRotation(CursorR);
 		}
 	}
 	MovementTick(DeltaSeconds);
@@ -118,13 +108,13 @@ void ATPSCharacter::MovementTick(float DeltaTime)
 	APlayerController* myController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	if (myController)
 	{
-		//FHitResult ResultHit;
-		//myController->GetHitResultUnderCursorByChannel(ETraceTypeQuery::TraceTypeQuery6, false, ResultHit);
-		//float FindRotatorResultYaw = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), ResultHit.Location).Yaw;
-		myController->GetHitResultUnderCursorByChannel(ETraceTypeQuery::TraceTypeQuery6, false, TraceHitResult);
-		float FindRotatorResultYaw = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TraceHitResult.Location).Yaw;
-		//SetActorRotation(FQuat(FRotator(0.0f, FindRotatorResultYaw, 0.0f)));
-		SetActorRotation(FRotator(0.0f, FindRotatorResultYaw, 0.0f));
+		if (AxisX != 0 || AxisY != 0)
+		{
+			//myController->GetHitResultUnderCursorByChannel(ETraceTypeQuery::TraceTypeQuery6, false, TraceHitResult);
+			myController->GetHitResultUnderCursor(ECC_GameTraceChannel2, false, TraceHitResult);
+			float FindRotatorResultYaw = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TraceHitResult.Location).Yaw;
+			SetActorRotation(FQuat(FRotator(0.0f, FindRotatorResultYaw, 0.0f)));
+		}
 	}
 }
 
