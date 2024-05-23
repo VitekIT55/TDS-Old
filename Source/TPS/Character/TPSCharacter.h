@@ -51,13 +51,22 @@ public:
 	bool SprintEnabled = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	bool SprintAllow = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	bool WalkEnabled = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	bool AimEnabled = false;
 
-	UPROPERTY()
-	FHitResult TraceHitResult;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float Stamina = 1.00f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	bool SprintBlock = 0;
+
+	//UPROPERTY()
+	//FHitResult TraceHitResult;
 
 	UFUNCTION()
 	void InputAxisX(float Value);

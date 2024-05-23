@@ -12,6 +12,7 @@
 #include "Materials/Material.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Engine/GameEngine.h"
 #include "Engine/World.h"
 
 ATPSCharacter::ATPSCharacter()
@@ -25,7 +26,7 @@ ATPSCharacter::ATPSCharacter()
 	bUseControllerRotationRoll = false;
 
 	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Rotate character to moving direction
+	GetCharacterMovement()->bOrientRotationToMovement = false; // Rotate character to moving direction
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 640.f, 0.f);
 	GetCharacterMovement()->bConstrainToPlane = true;
 	GetCharacterMovement()->bSnapToPlaneAtStart = true;
@@ -35,8 +36,12 @@ ATPSCharacter::ATPSCharacter()
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->SetUsingAbsoluteRotation(true); // Don't want arm to rotate when character does
 	CameraBoom->TargetArmLength = 800.f;
+	CameraBoom->bUsePawnControlRotation = false;
 	CameraBoom->SetRelativeRotation(FRotator(-60.f, 0.f, 0.f));
 	CameraBoom->bDoCollisionTest = false; // Don't want to pull camera in when it collides with level
+	CameraBoom->bInheritPitch = false;
+	CameraBoom->bInheritYaw = false;
+	CameraBoom->bInheritRoll = false;
 
 	// Create a camera...
 	TopDownCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownCamera"));
@@ -65,12 +70,11 @@ void ATPSCharacter::Tick(float DeltaSeconds)
 
 	if (CursorToWorld != nullptr)
 	{
-		//if (APlayerController* PC = Cast<APlayerController>(GetController()))
-		if (APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0))
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
 		{
 			if (PC != nullptr)
 			{
-				//FHitResult TraceHitResult;
+				FHitResult TraceHitResult;
 				PC->GetHitResultUnderCursor(ECC_Visibility, true, TraceHitResult);
 				FVector CursorFV = TraceHitResult.ImpactNormal;
 				FRotator CursorR = CursorFV.Rotation();
@@ -104,17 +108,67 @@ void ATPSCharacter::MovementTick(float DeltaTime)
 {
 	AddMovementInput(FVector(1.0f, 0.0f, 0.0f), AxisX);
 	AddMovementInput(FVector(0.0f, 1.0f, 0.0f), AxisY);
+	//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green, FString::Printf(TEXT("AxisX: %f"), AxisX));
+	//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, FString::Printf(TEXT("AxisY: %f"), AxisY));
 
 	APlayerController* myController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	if (myController)
 	{
-		if (AxisX != 0 || AxisY != 0)
+		//if (AxisX != 0 || AxisY != 0)
+		//{
+		FHitResult TraceHitResult;
+		myController->GetHitResultUnderCursorByChannel(ETraceTypeQuery::TraceTypeQuery6, false, TraceHitResult);
+		float FindRotatorResultYaw = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TraceHitResult.Location).Yaw;
+		//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, FString::Printf(TEXT("Yaw: %f"), FindRotatorResultYaw));
+		SetActorRotation(FQuat(FRotator(0.0f, FindRotatorResultYaw, 0.0f)));
+		int Xdir; int Ydir;
+		if (-22.5 <= FindRotatorResultYaw && FindRotatorResultYaw <= 22.5)
 		{
-			//myController->GetHitResultUnderCursorByChannel(ETraceTypeQuery::TraceTypeQuery6, false, TraceHitResult);
-			myController->GetHitResultUnderCursor(ECC_GameTraceChannel2, false, TraceHitResult);
-			float FindRotatorResultYaw = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TraceHitResult.Location).Yaw;
-			SetActorRotation(FQuat(FRotator(0.0f, FindRotatorResultYaw, 0.0f)));
+			Xdir = 1;
+			Ydir = 0;
 		}
+		else if (22.5 < FindRotatorResultYaw && FindRotatorResultYaw <= 67.5)
+		{
+			Xdir = 1;
+			Ydir = 1;
+		}
+		else if (67.5 < FindRotatorResultYaw && FindRotatorResultYaw <= 112.5)
+		{
+			Xdir = 0;
+			Ydir = 1;
+		}
+		else if (112.5 < FindRotatorResultYaw && FindRotatorResultYaw <= 157.5)
+		{
+			Xdir = -1;
+			Ydir = 1;
+		}
+		else if (157.5 < FindRotatorResultYaw || FindRotatorResultYaw <= -157.5)
+		{
+			Xdir = -1;
+			Ydir = 0;
+		}
+		else if (-157.5 < FindRotatorResultYaw && FindRotatorResultYaw <= -112.5)
+		{
+			Xdir = -1;
+			Ydir = -1;
+		}
+		else if (-112.5 < FindRotatorResultYaw && FindRotatorResultYaw <= -67.5)
+		{
+			Xdir = 0;
+			Ydir = -1;
+		}
+		else if (-67.5 < FindRotatorResultYaw && FindRotatorResultYaw < -22.5)
+		{
+			Xdir = 1;
+			Ydir = -1;
+		}
+		if (int(AxisX) == Xdir && int(AxisY) == Ydir)
+			SprintAllow = 1;
+		else
+			SprintAllow = 0;
+		//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Purple, FString::Printf(TEXT("Xdir: %i"), Xdir));
+		//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Orange, FString::Printf(TEXT("Ydir: %i"), Ydir));
+		//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Black, FString::Printf(TEXT("Sprint: %i"), SprintAllow));
 	}
 }
 
@@ -142,6 +196,18 @@ void ATPSCharacter::CharacterUpdate()
 		break;
 	}
 	GetCharacterMovement()->MaxWalkSpeed = ResSpeed;
+	if (ResSpeed >= 800 && Stamina > 0.0f && SprintBlock == 0)
+	{
+		Stamina -= 0.005;
+	}
+	else if (ResSpeed <= 800 && Stamina < 1.0f)
+		Stamina += 0.005;
+	else if (Stamina >= 1.0f && SprintBlock == 1)
+		SprintBlock = 0;
+	if (Stamina <= 0.0f)
+		SprintBlock = 1;
+	//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green, FString::Printf(TEXT("SprintBlock: %i"), SprintBlock));
+	//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, FString::Printf(TEXT("Stamina: %f"), Stamina));
 }
 
 void ATPSCharacter::ChangeMovementState()
