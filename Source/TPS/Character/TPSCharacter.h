@@ -65,6 +65,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	bool SprintBlock = 0;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float CharacterSpeed = 0;
+
 	//UPROPERTY()
 	//FHitResult TraceHitResult;
 

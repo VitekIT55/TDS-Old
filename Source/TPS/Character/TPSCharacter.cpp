@@ -196,11 +196,11 @@ void ATPSCharacter::CharacterUpdate()
 		break;
 	}
 	GetCharacterMovement()->MaxWalkSpeed = ResSpeed;
-	if (ResSpeed >= 800 && Stamina > 0.0f && SprintBlock == 0)
+	if (CharacterSpeed >= 790 && Stamina > 0.0f && SprintBlock == 0)
 	{
 		Stamina -= 0.005;
 	}
-	else if (ResSpeed <= 800 && Stamina < 1.0f)
+	else if (CharacterSpeed <= 789 && Stamina < 1.0f)
 		Stamina += 0.005;
 	else if (Stamina >= 1.0f && SprintBlock == 1)
 		SprintBlock = 0;
