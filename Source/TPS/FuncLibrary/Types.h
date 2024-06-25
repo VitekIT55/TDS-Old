@@ -161,6 +161,8 @@ struct FDporMeshInfo
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DporMesh")
 	float PowerImpulse = 0.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DporMesh")
+	float ImpulseRandomDispersion = 0.0f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DporMesh")
 	float CustomMass = 0.0f;
 };
 
