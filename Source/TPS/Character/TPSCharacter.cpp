@@ -136,7 +136,7 @@ void ATPSCharacter::MovementTick(float DeltaTime)
 		float FindRotatorResultYaw = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TraceHitResult.Location).Yaw;
 		//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, FString::Printf(TEXT("Yaw: %f"), FindRotatorResultYaw));
 		SetActorRotation(FQuat(FRotator(0.0f, FindRotatorResultYaw, 0.0f)));
-		int Xdir; int Ydir;
+		int Xdir = 0; int Ydir = 0;
 		if (-22.5 <= FindRotatorResultYaw && FindRotatorResultYaw <= 22.5)
 		{
 			Xdir = 1;
