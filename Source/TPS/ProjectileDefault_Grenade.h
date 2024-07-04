@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "../ProjectileDefault.h"
+#include "ProjectileDefault.h"
 #include "ProjectileDefault_Grenade.generated.h"
 
 /**

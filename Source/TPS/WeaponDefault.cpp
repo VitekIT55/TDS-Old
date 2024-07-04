@@ -3,6 +3,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/StaticMeshActor.h"
+#include "Engine/GameEngine.h"
 
 // Sets default values
 AWeaponDefault::AWeaponDefault()
@@ -56,7 +57,9 @@ void AWeaponDefault::FireTick(float DeltaTime)
 					Fire();
 			}
 			else
+			{
 				FireTimer -= DeltaTime;
+			}
 	}
 	else
 	{
@@ -89,16 +92,18 @@ void AWeaponDefault::DispersionTick(float DeltaTime)
 		if (!WeaponFiring)
 		{
 			if (ShouldReduceDispersion)
+			{
 				CurrentDispersion = CurrentDispersion - CurrentDispersionReduction;
+			}
 			else
+			{
 				CurrentDispersion = CurrentDispersion + CurrentDispersionReduction;
+			}
 		}
 
 		if (CurrentDispersion < CurrentDispersionMin)
 		{
-
 			CurrentDispersion = CurrentDispersionMin;
-
 		}
 		else
 		{
@@ -122,7 +127,9 @@ void AWeaponDefault::ClipDropTick(float DeltaTime)
 			InitDropMesh(WeaponSetting.ClipDropMesh.DropMesh, WeaponSetting.ClipDropMesh.DropMeshOffset, WeaponSetting.ClipDropMesh.DropMeshImpulseDir, WeaponSetting.ClipDropMesh.DropMeshLifeTime, WeaponSetting.ClipDropMesh.ImpulseRandomDispersion, WeaponSetting.ClipDropMesh.PowerImpulse, WeaponSetting.ClipDropMesh.CustomMass);
 		}
 		else
+		{
 			DropClipTimer -= DeltaTime;
+		}
 	}
 }
 
@@ -136,7 +143,9 @@ void AWeaponDefault::ShellDropTick(float DeltaTime)
 			InitDropMesh(WeaponSetting.ShellBullets.DropMesh, WeaponSetting.ShellBullets.DropMeshOffset, WeaponSetting.ShellBullets.DropMeshImpulseDir, WeaponSetting.ShellBullets.DropMeshLifeTime, WeaponSetting.ShellBullets.ImpulseRandomDispersion, WeaponSetting.ShellBullets.PowerImpulse, WeaponSetting.ShellBullets.CustomMass);
 		}
 		else
+		{
 			DropShellTimer -= DeltaTime;
+		}
 	}
 }
 
@@ -157,9 +166,13 @@ void AWeaponDefault::WeaponInit()
 void AWeaponDefault::SetWeaponStateFire(bool bIsFire)
 {
 	if (CheckWeaponCanFire())
+	{
 		WeaponFiring = bIsFire;
+	}
 	else
+	{
 		WeaponFiring = false;
+	}
 	FireTimer = 0.01f;//!!!!!
 }
 
@@ -177,19 +190,27 @@ void AWeaponDefault::Fire()
 {
 	UAnimMontage* AnimToPlay = nullptr;
 	if (WeaponAiming)
+	{
 		AnimToPlay = WeaponSetting.AnimWeaponInfo.AnimCharFireAim;
+	}
 	else
+	{
 		AnimToPlay = WeaponSetting.AnimWeaponInfo.AnimCharFire;
+	}
 
 	if (WeaponSetting.AnimWeaponInfo.AnimWeaponFire
 		&& SkeletalMeshWeapon
 		&& SkeletalMeshWeapon->GetAnimInstance())
+	{
 		SkeletalMeshWeapon->GetAnimInstance()->Montage_Play(WeaponSetting.AnimWeaponInfo.AnimWeaponFire);
+	}
 
 	if (WeaponSetting.ShellBullets.DropMesh)
 	{
 		if (WeaponSetting.ShellBullets.DropMeshTime < 0.0f)
+		{
 			InitDropMesh(WeaponSetting.ShellBullets.DropMesh, WeaponSetting.ShellBullets.DropMeshOffset, WeaponSetting.ShellBullets.DropMeshImpulseDir, WeaponSetting.ShellBullets.DropMeshLifeTime, WeaponSetting.ShellBullets.ImpulseRandomDispersion, WeaponSetting.ShellBullets.PowerImpulse, WeaponSetting.ShellBullets.CustomMass);
+		}
 		else
 		{
 			DropShellFlag = true;
@@ -250,8 +271,10 @@ void AWeaponDefault::Fire()
 					ETraceTypeQuery::TraceTypeQuery4, false, Actors, EDrawDebugTrace::ForDuration, Hit, true, FLinearColor::Red, FLinearColor::Green, 5.0f);
 
 				if (ShowDebug)
+				{
 					DrawDebugLine(GetWorld(), SpawnLocation, SpawnLocation * ShootLocation->GetForwardVector() * WeaponSetting.DistacneTrace,
 						FColor::Black, false, 5.f, (uint8)'\000', 0.5f);
+				}
 
 				if (Hit.GetActor() && Hit.PhysMaterial.IsValid())
 				{
@@ -267,10 +290,14 @@ void AWeaponDefault::Fire()
 					{
 						UParticleSystem* myParicle = WeaponSetting.ProjectileSetting.HitFXs[mySurfacetype];
 						if (myParicle)
+						{
 							UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), myParicle, FTransform(Hit.ImpactNormal.Rotation(), Hit.ImpactPoint, FVector(1.0f)));
+						}
 					}
 					if (WeaponSetting.ProjectileSetting.HitSound)
+					{
 						UGameplayStatics::PlaySoundAtLocation(GetWorld(), WeaponSetting.ProjectileSetting.HitSound, Hit.ImpactPoint);
+					}
 					UGameplayStatics::ApplyDamage(Hit.GetActor(), WeaponSetting.ProjectileSetting.ProjectileDamage, GetInstigatorController(), this, NULL);
 				}
 			}
@@ -431,6 +458,10 @@ void AWeaponDefault::InitDropMesh(UStaticMesh* DropMesh, FTransform Offset, FVec
 {
 	if (DropMesh)
 	{
+
+		FString MeshName = DropMesh->GetName();
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::Printf(TEXT("DropMesh Name: %s"), *MeshName));
+
 		FTransform Transform;
 		FVector LocalDir = this->GetActorForwardVector() * Offset.GetLocation().X + this->GetActorRightVector() * Offset.GetLocation().Y + this->GetActorUpVector() * Offset.GetLocation().Z;
 
@@ -449,7 +480,7 @@ void AWeaponDefault::InitDropMesh(UStaticMesh* DropMesh, FTransform Offset, FVec
 		{
 			NewActor->GetStaticMeshComponent()->SetCollisionProfileName(TEXT("IgnoreOnlyPawn"));
 			NewActor->GetStaticMeshComponent()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
-			NewActor->SetActorTickEnabled(false);
+			NewActor->SetActorTickEnabled(true);
 			NewActor->InitialLifeSpan = LifeTimeMesh;
 			NewActor->GetStaticMeshComponent()->Mobility = EComponentMobility::Movable;
 			NewActor->GetStaticMeshComponent()->SetSimulatePhysics(true);
@@ -463,7 +494,9 @@ void AWeaponDefault::InitDropMesh(UStaticMesh* DropMesh, FTransform Offset, FVec
 			NewActor->GetStaticMeshComponent()->SetCollisionResponseToChannel(ECC_PhysicsBody, ECollisionResponse::ECR_Block);
 
 			if (CustomMass > 0.0f)
+			{
 				NewActor->GetStaticMeshComponent()->SetMassOverrideInKg(NAME_None, CustomMass, true);
+			}
 			if (!DropImpulseDirection.IsNearlyZero())
 			{
 				FVector FinalDir;
@@ -474,6 +507,13 @@ void AWeaponDefault::InitDropMesh(UStaticMesh* DropMesh, FTransform Offset, FVec
 				FinalDir.GetSafeNormal(0.0001f);
 
 				NewActor->GetStaticMeshComponent()->AddImpulse(FinalDir * PowerImpulse);
+				auto cc = FinalDir.GetSafeNormal(0.0001f) * PowerImpulse;
+				//UE_LOG(LogTemp, Error, TEXT("IMPULSE X=%f,  Y=%f, Z=%f, power=%f"), cc.X, cc.Y, cc.Z, PowerImpulse);
+				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("IMPULSE X=%f,  Y=%f, Z=%f, power=%f"), cc.X, cc.Y, cc.Z, PowerImpulse));
+			}
+			else
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("ERROR Drop Impulse Dir Is X=%f,  Y=%f, Z=%f"), DropImpulseDirection.X, DropImpulseDirection.Y, DropImpulseDirection.Z));
 			}
 		}
 	}

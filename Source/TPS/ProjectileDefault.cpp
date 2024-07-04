@@ -1,6 +1,7 @@
 #include "ProjectileDefault.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/GameEngine.h"
 
 // Sets default values
 AProjectileDefault::AProjectileDefault()
@@ -105,21 +106,32 @@ void AProjectileDefault::InitProjectile(FProjectileInfo InitParam)
 {
 	BulletProjectileMovement->InitialSpeed = InitParam.ProjectileInitSpeed;
 	BulletProjectileMovement->MaxSpeed = InitParam.ProjectileInitSpeed;
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("ProjectileInitSpeed: %f"), BulletProjectileMovement->InitialSpeed));
 	this->SetLifeSpan(InitParam.ProjectileLifeTime);
+	//UE_LOG(LogTemp, Error, TEXT("IMPULSE        X=%f,          Y=%f,         Z=%f,        power=%f"), InitParam.ProjectileStaticMesh);
+	//UE_LOG(LogTemp, Error, TEXT("IMPULSE        X=%f,          Y=%f,         Z=%f,        power=%f"), InitParam.ProjectileStaticMesh);
 	if (InitParam.ProjectileStaticMesh)
 	{
 		BulletMesh->SetStaticMesh(InitParam.ProjectileStaticMesh);
-		BulletMesh->SetRelativeTransform(InitParam.ProjectileStaticMeshOffset);
+		//BulletMesh->SetRelativeTransform(InitParam.ProjectileStaticMeshOffset);
+		FString MeshName = (BulletMesh && BulletMesh->GetStaticMesh()) ? BulletMesh->GetStaticMesh()->GetName() : TEXT("None");
+		FString DebugMessage = FString::Printf(TEXT("BulletMesh Name: %s"), *MeshName);
+		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, DebugMessage);
+		//UE_LOG(LogTemp, Error, TEXT("BulletMesh StaticMesh Name: %s"), *MeshName);
 	}
 	else
+	{
 		BulletMesh->DestroyComponent();
+	}
 	if (InitParam.ProjectileTrailFx)
 	{
 		BulletFX->SetTemplate(InitParam.ProjectileTrailFx);
-		BulletFX->SetRelativeTransform(InitParam.ProjectileTrailFxOffset);
+		//BulletFX->SetRelativeTransform(InitParam.ProjectileTrailFxOffset);
 	}
 	else
+	{
 		BulletFX->DestroyComponent();
+	}
 	ProjectileSetting = InitParam;
 }
 
