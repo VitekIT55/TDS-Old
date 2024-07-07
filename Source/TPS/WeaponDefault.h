@@ -6,6 +6,7 @@
 
 #include "FuncLibrary/Types.h"
 #include "ProjectileDefault.h"
+//#include "ProjectileDefault_Grenade.h"
 #include "WeaponDefault.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponFireStart, UAnimMontage*, Anim);
@@ -76,8 +77,9 @@ public:
 	float FireTimer = 0.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReloadLogic")
 	float ReloadTimer = 0.0f;
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "ReloadLogic Debug")	//Remove !!! Debug
-	//float ReloadTime = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FRotator MeshWorldPistion;
 
 	//flags
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FireLogic")

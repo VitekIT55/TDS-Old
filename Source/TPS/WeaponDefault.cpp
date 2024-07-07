@@ -51,6 +51,7 @@ void AWeaponDefault::FireTick(float DeltaTime)
 	if (GetWeaponRound() > 0)
 	{
 		if (WeaponFiring)
+		{
 			if (FireTimer < 0.f)
 			{
 				if (!WeaponReloading)
@@ -60,6 +61,7 @@ void AWeaponDefault::FireTick(float DeltaTime)
 			{
 				FireTimer -= DeltaTime;
 			}
+		}
 	}
 	else
 	{
@@ -241,6 +243,12 @@ void AWeaponDefault::Fire()
 		{
 			EndLocation = GetFireEndLocation();
 
+			if (ShowDebug)
+			{
+				DrawDebugLine(GetWorld(), SpawnLocation, SpawnLocation + ShootLocation->GetForwardVector() * WeaponSetting.DistacneTrace,
+					FColor::Green, false, 5.f, (uint8)'\000', 0.5f);
+			}
+
 			if (ProjectileInfo.Projectile)
 			{
 				//Projectile Init ballistic fire
@@ -259,7 +267,9 @@ void AWeaponDefault::Fire()
 				AProjectileDefault* myProjectile = Cast<AProjectileDefault>(GetWorld()->SpawnActor(ProjectileInfo.Projectile, &SpawnLocation, &SpawnRotation, SpawnParams));
 				if (myProjectile)
 				{
-					myProjectile->InitProjectile(WeaponSetting.ProjectileSetting);
+					myProjectile->InitProjectile(ProjectileInfo);
+					myProjectile->BulletProjectileMovement->InitialSpeed = ProjectileInfo.ProjectileInitSpeed;
+					myProjectile->BulletProjectileMovement->Velocity = Dir * ProjectileInfo.ProjectileInitSpeed;
 				}
 			}
 			else
@@ -269,12 +279,6 @@ void AWeaponDefault::Fire()
 
 				UKismetSystemLibrary::LineTraceSingle(GetWorld(), SpawnLocation, EndLocation * WeaponSetting.DistacneTrace,
 					ETraceTypeQuery::TraceTypeQuery4, false, Actors, EDrawDebugTrace::ForDuration, Hit, true, FLinearColor::Red, FLinearColor::Green, 5.0f);
-
-				if (ShowDebug)
-				{
-					DrawDebugLine(GetWorld(), SpawnLocation, SpawnLocation * ShootLocation->GetForwardVector() * WeaponSetting.DistacneTrace,
-						FColor::Black, false, 5.f, (uint8)'\000', 0.5f);
-				}
 
 				if (Hit.GetActor() && Hit.PhysMaterial.IsValid())
 				{
@@ -372,35 +376,20 @@ FVector AWeaponDefault::GetFireEndLocation() const
 	FVector EndLocation = FVector(0.f);
 
 	FVector tmpV = (ShootLocation->GetComponentLocation() - ShootEndLocation);
-	UE_LOG(LogTemp, Warning, TEXT("Vector: X = %f. Y = %f. Size = %f"), tmpV.X, tmpV.Y, tmpV.Size());
 
 	if (tmpV.Size() > SizeVectorToChangeShootDirectionLogic)
 	{
-		EndLocation = ShootLocation->GetComponentLocation() + ApplyDispersionToShoot((ShootLocation->GetComponentLocation() - ShootEndLocation).GetSafeNormal()) * -20000.0f;
-		if (ShowDebug)
-			DrawDebugCone(GetWorld(), ShootLocation->GetComponentLocation(), -(ShootLocation->GetComponentLocation() - ShootEndLocation), WeaponSetting.DistacneTrace, GetCurrentDispersion() * PI / 180.f, GetCurrentDispersion() * PI / 180.f, 32, FColor::Emerald, false, .1f, (uint8)'\000', 1.0f);
+		//EndLocation = tmpV - ShootLocation->GetForwardVector() * WeaponSetting.DistacneTrace;
+		//EndLocation = ShootLocation->GetComponentLocation() + ApplyDispersionToShoot((ShootLocation->GetComponentLocation() - ShootEndLocation).GetSafeNormal()) *-20000.0f;
+		EndLocation = ShootLocation->GetComponentLocation() + ApplyDispersionToShoot(tmpV.GetSafeNormal()) * -20000.0f;
 	}
+
 	else
 	{
+		//EndLocation = tmpV + ShootLocation->GetForwardVector() * WeaponSetting.DistacneTrace;
+		//EndLocation = ShootLocation->GetComponentLocation() + ApplyDispersionToShoot(ShootLocation->GetForwardVector()) *20000.0f;
 		EndLocation = ShootLocation->GetComponentLocation() + ApplyDispersionToShoot(ShootLocation->GetForwardVector()) * 20000.0f;
-		if (ShowDebug)
-			DrawDebugCone(GetWorld(), ShootLocation->GetComponentLocation(), ShootLocation->GetForwardVector(), WeaponSetting.DistacneTrace, GetCurrentDispersion() * PI / 180.f, GetCurrentDispersion() * PI / 180.f, 32, FColor::Emerald, false, .1f, (uint8)'\000', 1.0f);
 	}
-
-
-	if (ShowDebug)
-	{
-		//direction weapon look
-		DrawDebugLine(GetWorld(), ShootLocation->GetComponentLocation(), ShootLocation->GetComponentLocation() + ShootLocation->GetForwardVector() * 500.0f, FColor::Cyan, false, 5.f, (uint8)'\000', 0.5f);
-		//direction projectile must fly
-		DrawDebugLine(GetWorld(), ShootLocation->GetComponentLocation(), ShootEndLocation, FColor::Red, false, 5.f, (uint8)'\000', 0.5f);
-		//Direction Projectile Current fly
-		DrawDebugLine(GetWorld(), ShootLocation->GetComponentLocation(), EndLocation, FColor::Black, false, 5.f, (uint8)'\000', 0.5f);
-
-		//DrawDebugSphere(GetWorld(), ShootLocation->GetComponentLocation() + ShootLocation->GetForwardVector()*SizeVectorToChangeShootDirectionLogic, 10.f, 8, FColor::Red, false, 4.0f);
-	}
-
-
 	return EndLocation;
 }
 
@@ -416,33 +405,35 @@ int32 AWeaponDefault::GetWeaponRound()
 
 void AWeaponDefault::InitReload()
 {
-	WeaponReloading = true;
-
-	ReloadTimer = WeaponSetting.ReloadTime;
-
-	UAnimMontage* AnimToPlay = nullptr;
-	if (WeaponAiming)
-		AnimToPlay = WeaponSetting.AnimWeaponInfo.AnimCharReloadAim;
-	else
-		AnimToPlay = WeaponSetting.AnimWeaponInfo.AnimCharReload;
-
-	OnWeaponReloadStart.Broadcast(AnimToPlay);
-
-	UAnimMontage* AnimWeaponToPlay = nullptr;
-	if (WeaponAiming)
-		AnimWeaponToPlay = WeaponSetting.AnimWeaponInfo.AnimWeaponReloadAim;
-	else
-		AnimWeaponToPlay = WeaponSetting.AnimWeaponInfo.AnimWeaponReload;
-
-	if (WeaponSetting.AnimWeaponInfo.AnimWeaponReload
-		&& SkeletalMeshWeapon
-		&& SkeletalMeshWeapon->GetAnimInstance())
-		SkeletalMeshWeapon->GetAnimInstance()->Montage_Play(AnimWeaponToPlay);
-	
-	if (WeaponSetting.ClipDropMesh.DropMesh)
+	if (WeaponReloading == false)
 	{
-		DropClipFlag = true;
-		DropClipTimer = WeaponSetting.ClipDropMesh.DropMeshTime;
+		ReloadTimer = WeaponSetting.ReloadTime;
+
+		UAnimMontage* AnimToPlay = nullptr;
+		if (WeaponAiming)
+			AnimToPlay = WeaponSetting.AnimWeaponInfo.AnimCharReloadAim;
+		else
+			AnimToPlay = WeaponSetting.AnimWeaponInfo.AnimCharReload;
+
+		OnWeaponReloadStart.Broadcast(AnimToPlay);
+
+		UAnimMontage* AnimWeaponToPlay = nullptr;
+		if (WeaponAiming)
+			AnimWeaponToPlay = WeaponSetting.AnimWeaponInfo.AnimWeaponReloadAim;
+		else
+			AnimWeaponToPlay = WeaponSetting.AnimWeaponInfo.AnimWeaponReload;
+
+		if (WeaponSetting.AnimWeaponInfo.AnimWeaponReload
+			&& SkeletalMeshWeapon
+			&& SkeletalMeshWeapon->GetAnimInstance())
+			SkeletalMeshWeapon->GetAnimInstance()->Montage_Play(AnimWeaponToPlay);
+
+		if (WeaponSetting.ClipDropMesh.DropMesh)
+		{
+			DropClipFlag = true;
+			DropClipTimer = WeaponSetting.ClipDropMesh.DropMeshTime;
+		}
+		WeaponReloading = true;
 	}
 }
 
@@ -459,8 +450,8 @@ void AWeaponDefault::InitDropMesh(UStaticMesh* DropMesh, FTransform Offset, FVec
 	if (DropMesh)
 	{
 
-		FString MeshName = DropMesh->GetName();
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::Printf(TEXT("DropMesh Name: %s"), *MeshName));
+		//FString MeshName = DropMesh->GetName();
+		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::Printf(TEXT("DropMesh Name: %s"), *MeshName));
 
 		FTransform Transform;
 		FVector LocalDir = this->GetActorForwardVector() * Offset.GetLocation().X + this->GetActorRightVector() * Offset.GetLocation().Y + this->GetActorUpVector() * Offset.GetLocation().Z;
@@ -497,24 +488,16 @@ void AWeaponDefault::InitDropMesh(UStaticMesh* DropMesh, FTransform Offset, FVec
 			{
 				NewActor->GetStaticMeshComponent()->SetMassOverrideInKg(NAME_None, CustomMass, true);
 			}
-			if (!DropImpulseDirection.IsNearlyZero())
-			{
-				FVector FinalDir;
-				LocalDir = LocalDir + (DropImpulseDirection * 1000.0f);
+			FVector FinalDir;
+			LocalDir = LocalDir + (DropImpulseDirection * 1000.0f);
 
-				if (!FMath::IsNearlyZero(ImpilseRandomDispersion))
-					FinalDir += UKismetMathLibrary::RandomUnitVectorInConeInDegrees(LocalDir, ImpilseRandomDispersion);
-				FinalDir.GetSafeNormal(0.0001f);
+			if (!FMath::IsNearlyZero(ImpilseRandomDispersion))
+				FinalDir += UKismetMathLibrary::RandomUnitVectorInConeInDegrees(LocalDir, ImpilseRandomDispersion);
+			FinalDir.GetSafeNormal(0.0001f);
 
-				NewActor->GetStaticMeshComponent()->AddImpulse(FinalDir * PowerImpulse);
-				auto cc = FinalDir.GetSafeNormal(0.0001f) * PowerImpulse;
-				//UE_LOG(LogTemp, Error, TEXT("IMPULSE X=%f,  Y=%f, Z=%f, power=%f"), cc.X, cc.Y, cc.Z, PowerImpulse);
-				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("IMPULSE X=%f,  Y=%f, Z=%f, power=%f"), cc.X, cc.Y, cc.Z, PowerImpulse));
-			}
-			else
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("ERROR Drop Impulse Dir Is X=%f,  Y=%f, Z=%f"), DropImpulseDirection.X, DropImpulseDirection.Y, DropImpulseDirection.Z));
-			}
+			NewActor->GetStaticMeshComponent()->AddImpulse(MeshWorldPistion.RotateVector(FinalDir * PowerImpulse));
+			auto cc = FinalDir.GetSafeNormal(0.0001f) * PowerImpulse;
+			//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("IMPULSE X=%f,  Y=%f, Z=%f, power=%f"), cc.X, cc.Y, cc.Z, PowerImpulse));
 		}
 	}
 }

@@ -207,8 +207,6 @@ struct FWeaponInfo : public FTableRowBase
 	//if null use trace logic (TSubclassOf<class AProjectileDefault> Projectile = nullptr)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile ")
 	FProjectileInfo ProjectileSetting;
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trace ")
-	//float WeaponDamage = 20.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trace ")
 	float DistacneTrace = 2000.0f;
 	//one decal on all?

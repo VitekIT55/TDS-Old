@@ -104,35 +104,32 @@ void AProjectileDefault::BulletCollisionSphereEndOverlap(UPrimitiveComponent* Ov
 
 void AProjectileDefault::InitProjectile(FProjectileInfo InitParam)
 {
-	BulletProjectileMovement->InitialSpeed = InitParam.ProjectileInitSpeed;
-	BulletProjectileMovement->MaxSpeed = InitParam.ProjectileInitSpeed;
+	ProjectileSetting = InitParam;
+	BulletProjectileMovement->InitialSpeed = ProjectileSetting.ProjectileInitSpeed;
+	BulletProjectileMovement->MaxSpeed = ProjectileSetting.ProjectileInitSpeed;
 	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("ProjectileInitSpeed: %f"), BulletProjectileMovement->InitialSpeed));
-	this->SetLifeSpan(InitParam.ProjectileLifeTime);
-	//UE_LOG(LogTemp, Error, TEXT("IMPULSE        X=%f,          Y=%f,         Z=%f,        power=%f"), InitParam.ProjectileStaticMesh);
-	//UE_LOG(LogTemp, Error, TEXT("IMPULSE        X=%f,          Y=%f,         Z=%f,        power=%f"), InitParam.ProjectileStaticMesh);
-	if (InitParam.ProjectileStaticMesh)
+	this->SetLifeSpan(ProjectileSetting.ProjectileLifeTime);
+	if (ProjectileSetting.ProjectileStaticMesh)
 	{
-		BulletMesh->SetStaticMesh(InitParam.ProjectileStaticMesh);
+		BulletMesh->SetStaticMesh(ProjectileSetting.ProjectileStaticMesh);
 		//BulletMesh->SetRelativeTransform(InitParam.ProjectileStaticMeshOffset);
-		FString MeshName = (BulletMesh && BulletMesh->GetStaticMesh()) ? BulletMesh->GetStaticMesh()->GetName() : TEXT("None");
-		FString DebugMessage = FString::Printf(TEXT("BulletMesh Name: %s"), *MeshName);
+		//FString MeshName = (BulletMesh && BulletMesh->GetStaticMesh()) ? BulletMesh->GetStaticMesh()->GetName() : TEXT("None");
+		//FString DebugMessage = FString::Printf(TEXT("BulletMesh Name: %s"), *MeshName);
 		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, DebugMessage);
-		//UE_LOG(LogTemp, Error, TEXT("BulletMesh StaticMesh Name: %s"), *MeshName);
 	}
 	else
 	{
 		BulletMesh->DestroyComponent();
 	}
-	if (InitParam.ProjectileTrailFx)
+	if (ProjectileSetting.ProjectileTrailFx)
 	{
-		BulletFX->SetTemplate(InitParam.ProjectileTrailFx);
+		BulletFX->SetTemplate(ProjectileSetting.ProjectileTrailFx);
 		//BulletFX->SetRelativeTransform(InitParam.ProjectileTrailFxOffset);
 	}
 	else
 	{
 		BulletFX->DestroyComponent();
 	}
-	ProjectileSetting = InitParam;
 }
 
 void AProjectileDefault::ImpactProjectile()
