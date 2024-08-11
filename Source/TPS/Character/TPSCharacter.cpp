@@ -28,7 +28,6 @@ ATPSCharacter::ATPSCharacter()
 
 	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = false; // Rotate character to moving direction
-	//GetCharacterMovement()->bOrientRotationToMovement = true; // Rotate character to moving direction
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 640.f, 0.f);
 	GetCharacterMovement()->bConstrainToPlane = true;
 	GetCharacterMovement()->bSnapToPlaneAtStart = true;
@@ -49,6 +48,13 @@ ATPSCharacter::ATPSCharacter()
 	TopDownCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownCamera"));
 	TopDownCameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	TopDownCameraComponent->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+
+	// Inventory
+	InventoryComponent = CreateDefaultSubobject<UTPSInventoryComponent>(TEXT("InventoryComponent"));
+	if (InventoryComponent)
+	{
+		InventoryComponent->OnSwitchWeapon.AddDynamic(this, &ATPSCharacter::InitWeapon);
+	}
 
 	// Activate ticking in order to update the cursor every frame.
 	PrimaryActorTick.bCanEverTick = true;
@@ -73,14 +79,13 @@ void ATPSCharacter::Tick(float DeltaSeconds)
 			CurrentCursor->SetWorldRotation(CursorR);
 		}
 	}
+
 	MovementTick(DeltaSeconds);
 }
 
 void ATPSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	InitWeapon(InitWeaponName);
 
 	if (CursorMaterial)
 	{
@@ -98,6 +103,9 @@ void ATPSCharacter::SetupPlayerInputComponent(UInputComponent* NewInputComponent
 	NewInputComponent->BindAction(TEXT("FireEvent"), EInputEvent::IE_Pressed, this, &ATPSCharacter::InputAttackPressed);
 	NewInputComponent->BindAction(TEXT("FireEvent"), EInputEvent::IE_Released, this, &ATPSCharacter::InputAttackReleased);
 	NewInputComponent->BindAction(TEXT("ReloadEvent"), EInputEvent::IE_Released, this, &ATPSCharacter::TryReloadWeapon);
+
+	NewInputComponent->BindAction(TEXT("SwitchNextWeapon"), EInputEvent::IE_Pressed, this, &ATPSCharacter::TrySwicthNextWeapon);
+	NewInputComponent->BindAction(TEXT("SwitchPreviosWeapon"), EInputEvent::IE_Pressed, this, &ATPSCharacter::TrySwitchPreviosWeapon);
 }
 
 void ATPSCharacter::InputAxisX(float Value)
@@ -132,10 +140,10 @@ void ATPSCharacter::MovementTick(float DeltaTime)
 	if (myController)
 	{
 		FHitResult TraceHitResult;
-		myController->GetHitResultUnderCursor(ECC_GameTraceChannel1, false, TraceHitResult);
+		myController->GetHitResultUnderCursor(ECC_GameTraceChannel1, true, TraceHitResult);
 		float FindRotatorResultYaw = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TraceHitResult.Location).Yaw;
-		//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, FString::Printf(TEXT("Yaw: %f"), FindRotatorResultYaw));
 		SetActorRotation(FQuat(FRotator(0.0f, FindRotatorResultYaw, 0.0f)));
+
 		int Xdir = 0; int Ydir = 0;
 		if (-22.5 <= FindRotatorResultYaw && FindRotatorResultYaw <= 22.5)
 		{
@@ -303,8 +311,14 @@ AWeaponDefault* ATPSCharacter::GetCurrentWeapon()
 	return CurrentWeapon;
 }
 
-void ATPSCharacter::InitWeapon(FName IdWeaponName)//ToDo Init by id row by table
+void ATPSCharacter::InitWeapon(FName IdWeaponName, FAdditionalWeaponInfo WeaponAdditionalInfo, int32 NewCurrentIndexWeapon)
 {
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->Destroy();
+		CurrentWeapon = nullptr;
+	}
+
 	UTPSGameInstance* myGI = Cast<UTPSGameInstance>(GetGameInstance());
 	FWeaponInfo myWeaponInfo;
 	if (myGI)
@@ -318,7 +332,7 @@ void ATPSCharacter::InitWeapon(FName IdWeaponName)//ToDo Init by id row by table
 
 				FActorSpawnParameters SpawnParams;
 				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-				SpawnParams.Owner = GetOwner();
+				SpawnParams.Owner = this;
 				SpawnParams.Instigator = GetInstigator();
 
 				AWeaponDefault* myWeapon = Cast<AWeaponDefault>(GetWorld()->SpawnActor(myWeaponInfo.WeaponClass, &SpawnLocation, &SpawnRotation, SpawnParams));
@@ -329,28 +343,48 @@ void ATPSCharacter::InitWeapon(FName IdWeaponName)//ToDo Init by id row by table
 					CurrentWeapon = myWeapon;
 
 					myWeapon->WeaponSetting = myWeaponInfo;
-					myWeapon->WeaponInfo.Round = myWeaponInfo.MaxRound;
-					//Remove !!! Debug
-					//myWeapon->ReloadTime = myWeaponInfo.ReloadTime;
-					//myWeapon->UpdateStateWeapon(MovementState);
 
+					//myWeapon->AdditionalWeaponInfo.Round = myWeaponInfo.MaxRound;
+
+					myWeapon->ReloadTimer = myWeaponInfo.ReloadTime;
+					myWeapon->UpdateStateWeapon(MovementState);
+
+					myWeapon->AdditionalWeaponInfo = WeaponAdditionalInfo;
+					//if(InventoryComponent)
+					CurrentIndexWeapon = NewCurrentIndexWeapon;//fix
+
+					//Not Forget remove delegate on change/drop weapon
 					myWeapon->OnWeaponReloadStart.AddDynamic(this, &ATPSCharacter::WeaponReloadStart);
 					myWeapon->OnWeaponReloadEnd.AddDynamic(this, &ATPSCharacter::WeaponReloadEnd);
+
+					myWeapon->OnWeaponFireStart.AddDynamic(this, &ATPSCharacter::WeaponFireStart);
+
+					// after switch try reload weapon if needed
+					if (CurrentWeapon->GetWeaponRound() <= 0 && CurrentWeapon->CheckCanWeaponReload())
+						CurrentWeapon->InitReload();
+
+					if (InventoryComponent)
+						InventoryComponent->OnWeaponAmmoAviable.Broadcast(myWeapon->WeaponSetting.WeaponType);
 				}
 			}
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("ATPSCharacter::InitWeapon - Weapon not found in table -NULL"));
+			UE_LOG(LogTemp, Warning, TEXT("ATPSCharacter::InitWeapon - Weapon not found in table - NULL"));
 		}
 	}
 }
 
+void ATPSCharacter::RemoveCurrentWeapon()
+{
+
+}
+
 void ATPSCharacter::TryReloadWeapon()
 {
-	if (CurrentWeapon)
+	if (CurrentWeapon && !CurrentWeapon->WeaponReloading)
 	{
-		if (CurrentWeapon->GetWeaponRound() <= CurrentWeapon->WeaponSetting.MaxRound)
+		if (CurrentWeapon->GetWeaponRound() < CurrentWeapon->WeaponSetting.MaxRound && CurrentWeapon->CheckCanWeaponReload())
 			CurrentWeapon->InitReload();
 	}
 }
@@ -360,9 +394,14 @@ void ATPSCharacter::WeaponReloadStart(UAnimMontage* Anim)
 	WeaponReloadStart_BP(Anim);
 }
 
-void ATPSCharacter::WeaponReloadEnd()
+void ATPSCharacter::WeaponReloadEnd(bool bIsSuccess, int32 AmmoTake)
 {
-	WeaponReloadEnd_BP();
+	if (InventoryComponent && CurrentWeapon)
+	{
+		InventoryComponent->AmmoSlotChangeValue(CurrentWeapon->WeaponSetting.WeaponType, AmmoTake);
+		InventoryComponent->SetAdditionalInfoWeapon(CurrentIndexWeapon, CurrentWeapon->AdditionalWeaponInfo);
+	}
+	WeaponReloadEnd_BP(bIsSuccess);
 }
 
 void ATPSCharacter::WeaponReloadStart_BP_Implementation(UAnimMontage* Anim)
@@ -370,7 +409,19 @@ void ATPSCharacter::WeaponReloadStart_BP_Implementation(UAnimMontage* Anim)
 	// in BP
 }
 
-void ATPSCharacter::WeaponReloadEnd_BP_Implementation()
+void ATPSCharacter::WeaponReloadEnd_BP_Implementation(bool bIsSuccess)
+{
+	// in BP
+}
+
+void ATPSCharacter::WeaponFireStart(UAnimMontage* Anim)
+{
+	if (InventoryComponent && CurrentWeapon)
+		InventoryComponent->SetAdditionalInfoWeapon(CurrentIndexWeapon, CurrentWeapon->AdditionalWeaponInfo);
+	WeaponFireStart_BP(Anim);
+}
+
+void ATPSCharacter::WeaponFireStart_BP_Implementation(UAnimMontage* Anim)
 {
 	// in BP
 }
@@ -378,4 +429,54 @@ void ATPSCharacter::WeaponReloadEnd_BP_Implementation()
 UDecalComponent* ATPSCharacter::GetCursorToWorld()
 {
 	return CurrentCursor;
+}
+
+//ToDO in one func TrySwitchPreviosWeapon && TrySwicthNextWeapon
+//need Timer to Switch with Anim, this method stupid i must know switch success for second logic inventory
+//now we not have not success switch/ if 1 weapon switch to self
+void ATPSCharacter::TrySwicthNextWeapon()
+{
+	if (InventoryComponent->WeaponSlots.Num() > 1)
+	{
+		//We have more then one weapon go switch
+		int8 OldIndex = CurrentIndexWeapon;
+		FAdditionalWeaponInfo OldInfo;
+		if (CurrentWeapon)
+		{
+			OldInfo = CurrentWeapon->AdditionalWeaponInfo;
+			if (CurrentWeapon->WeaponReloading)
+				CurrentWeapon->CancelReload();
+		}
+
+		if (InventoryComponent)
+		{
+			if (InventoryComponent->SwitchWeaponToIndex(CurrentIndexWeapon + 1, OldIndex, OldInfo, true))
+			{
+			}
+		}
+	}
+}
+
+void ATPSCharacter::TrySwitchPreviosWeapon()
+{
+	if (InventoryComponent->WeaponSlots.Num() > 1)
+	{
+		//We have more then one weapon go switch
+		int8 OldIndex = CurrentIndexWeapon;
+		FAdditionalWeaponInfo OldInfo;
+		if (CurrentWeapon)
+		{
+			OldInfo = CurrentWeapon->AdditionalWeaponInfo;
+			if (CurrentWeapon->WeaponReloading)
+				CurrentWeapon->CancelReload();
+		}
+
+		if (InventoryComponent)
+		{
+			//InventoryComponent->SetAdditionalInfoWeapon(OldIndex, GetCurrentWeapon()->AdditionalWeaponInfo);
+			if (InventoryComponent->SwitchWeaponToIndex(CurrentIndexWeapon - 1, OldIndex, OldInfo, false))
+			{
+			}
+		}
+	}
 }

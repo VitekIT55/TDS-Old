@@ -5,7 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "../FuncLibrary/Types.h"
-#include "../WeaponDefault.h"
+#include "../Weapon/WeaponDefault.h"
+#include "TPSInventoryComponent.h"
 
 #include "TPSCharacter.generated.h"
 
@@ -29,6 +30,9 @@ public:
 	FORCEINLINE class UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent; }
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	class UTPSInventoryComponent* InventoryComponent;
 
 private:
 	/** Top down camera */
@@ -70,10 +74,7 @@ public:
 	//Weapon	
 	AWeaponDefault* CurrentWeapon = nullptr;
 
-	//for demo 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Demo")
-	FName InitWeaponName;
-
+	//Inputs
 	UFUNCTION()
 	void InputAxisX(float Value);
 	UFUNCTION()
@@ -85,6 +86,7 @@ public:
 
 	float AxisX = 0.0f;
 	float AxisY = 0.0f;
+	
 	//Tick Func
 	UFUNCTION()
 	void MovementTick(float DeltaTime);
@@ -100,19 +102,32 @@ public:
 	UFUNCTION(BlueprintCallable)
 	AWeaponDefault* GetCurrentWeapon();
 	UFUNCTION(BlueprintCallable)
-	void InitWeapon(FName IdWeaponName);
+	void InitWeapon(FName IdWeaponName, FAdditionalWeaponInfo WeaponAdditionalInfo, int32 NewCurrentIndexWeapon);
+	UFUNCTION(BlueprintCallable)//VisualOnly
+	void RemoveCurrentWeapon();
 	UFUNCTION(BlueprintCallable)
 	void TryReloadWeapon();
 	UFUNCTION()
 	void WeaponReloadStart(UAnimMontage* Anim);
 	UFUNCTION()
-	void WeaponReloadEnd();
+	void WeaponReloadEnd(bool bIsSuccess, int32 AmmoTake);
 	UFUNCTION(BlueprintNativeEvent)
 	void WeaponReloadStart_BP(UAnimMontage* Anim);
 	UFUNCTION(BlueprintNativeEvent)
-	void WeaponReloadEnd_BP();
+	void WeaponReloadEnd_BP(bool bIsSuccess);
+	UFUNCTION()
+	void WeaponFireStart(UAnimMontage* Anim);
+	UFUNCTION(BlueprintNativeEvent)
+	void WeaponFireStart_BP(UAnimMontage* Anim);
 
 	UFUNCTION(BlueprintCallable)
 	UDecalComponent* GetCursorToWorld();
+
+	//Inventory Func
+	void TrySwicthNextWeapon();
+	void TrySwitchPreviosWeapon();
+
+	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
+	int32 CurrentIndexWeapon = 0;
 };
 
