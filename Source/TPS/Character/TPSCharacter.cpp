@@ -79,7 +79,6 @@ void ATPSCharacter::Tick(float DeltaSeconds)
 			CurrentCursor->SetWorldRotation(CursorR);
 		}
 	}
-
 	MovementTick(DeltaSeconds);
 }
 
@@ -143,7 +142,6 @@ void ATPSCharacter::MovementTick(float DeltaTime)
 		myController->GetHitResultUnderCursor(ECC_GameTraceChannel1, true, TraceHitResult);
 		float FindRotatorResultYaw = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), TraceHitResult.Location).Yaw;
 		SetActorRotation(FQuat(FRotator(0.0f, FindRotatorResultYaw, 0.0f)));
-
 		int Xdir = 0; int Ydir = 0;
 		if (-22.5 <= FindRotatorResultYaw && FindRotatorResultYaw <= 22.5)
 		{

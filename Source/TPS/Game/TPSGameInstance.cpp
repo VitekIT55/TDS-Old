@@ -70,7 +70,7 @@ bool UTPSGameInstance::GetDropItemInfoByName(FName NameItem, FDropItem& OutInfo)
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UTPSGameInstance::GetDropItemInfoByName - DropItemInfoTable -NULL"));
+		UE_LOG(LogTemp, Warning, TEXT("UTPSGameInstance::GetWeaponInfoByName - WeaponTable -NULL"));
 	}
 
 	return bIsFind;

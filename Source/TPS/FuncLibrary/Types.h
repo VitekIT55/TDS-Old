@@ -4,7 +4,6 @@
 
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Engine/DataTable.h"
-
 #include "Types.generated.h"
 
 UENUM(BlueprintType)
