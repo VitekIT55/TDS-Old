@@ -69,6 +69,8 @@ void AProjectileDefault::BulletCollisionSphereHit(UPrimitiveComponent* HitComp, 
 			if (myMaterial && OtherComp)
 			{
 				UGameplayStatics::SpawnDecalAttached(myMaterial, FVector(20.0f), OtherComp, NAME_None, Hit.ImpactPoint, Hit.ImpactNormal.Rotation(), EAttachLocation::KeepWorldPosition, 10.0f);
+				FString ComponentName = OtherComp->GetName();
+				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, FString::Printf(TEXT("OtherComp: %s"), *ComponentName));
 			}
 		}
 		if (ProjectileSetting.HitFXs.Contains(mySurfacetype))
@@ -86,6 +88,7 @@ void AProjectileDefault::BulletCollisionSphereHit(UPrimitiveComponent* HitComp, 
 		}
 
 	}
+	UGameplayStatics::ApplyPointDamage(OtherActor, ProjectileSetting.ProjectileDamage, Hit.TraceStart, Hit, GetInstigatorController(), this, NULL);
 	UGameplayStatics::ApplyDamage(OtherActor, ProjectileSetting.ProjectileDamage, GetInstigatorController(), this, NULL);
 	ImpactProjectile();
 	//UGameplayStatics::ApplyRadialDamageWithFalloff()
