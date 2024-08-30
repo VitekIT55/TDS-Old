@@ -111,6 +111,8 @@ void ATPSCharacter::SetupPlayerInputComponent(UInputComponent* NewInputComponent
 
 	NewInputComponent->BindAction(TEXT("SwitchNextWeapon"), EInputEvent::IE_Pressed, this, &ATPSCharacter::TrySwicthNextWeapon);
 	NewInputComponent->BindAction(TEXT("SwitchPreviosWeapon"), EInputEvent::IE_Pressed, this, &ATPSCharacter::TrySwitchPreviosWeapon);
+
+	NewInputComponent->BindAction(TEXT("AbilityAction"), EInputEvent::IE_Pressed, this, &ATPSCharacter::TryAbilityEnabled);
 }
 
 void ATPSCharacter::InputAxisX(float Value)
@@ -485,6 +487,54 @@ void ATPSCharacter::TrySwitchPreviosWeapon()
 	}
 }
 
+void ATPSCharacter::TryAbilityEnabled()
+{
+	if (AbilityEffect)//TODO Cool down
+	{
+		UTPS_StateEffect* NewEffect = NewObject<UTPS_StateEffect>(this, AbilityEffect);
+		if (NewEffect)
+		{
+			NewEffect->InitObject(this);
+		}
+	}
+}
+
+EPhysicalSurface ATPSCharacter::GetSurfuceType()
+{
+	EPhysicalSurface Result = EPhysicalSurface::SurfaceType_Default;
+	if (CharHealthComponent)
+	{
+		if (CharHealthComponent->GetCurrentShield() <= 0)
+		{
+			if (GetMesh())
+			{
+				UMaterialInterface* myMaterial = GetMesh()->GetMaterial(0);
+				if (myMaterial)
+				{
+					Result = myMaterial->GetPhysicalMaterial()->SurfaceType;
+				}
+			}
+		}
+	}
+	return Result;
+}
+
+TArray<UTPS_StateEffect*> ATPSCharacter::GetAllCurrentEffects()
+{
+	return Effects;
+}
+
+void ATPSCharacter::RemoveEffect(UTPS_StateEffect* RemoveEffect)
+{
+	Effects.Remove(RemoveEffect);
+
+}
+
+void ATPSCharacter::AddEffect(UTPS_StateEffect* newEffect)
+{
+	Effects.Add(newEffect);
+}
+
 void ATPSCharacter::CharDead()
 {
 	float TimeAnim = 0.0f;
@@ -520,6 +570,15 @@ float ATPSCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& D
 	if (bIsAlive)
 	{
 		CharHealthComponent->ChangeHealthValue(-DamageAmount);
+	}
+
+	if (DamageEvent.IsOfType(FRadialDamageEvent::ClassID))
+	{
+		AProjectileDefault* myProjectile = Cast<AProjectileDefault>(DamageCauser);
+		if (myProjectile)
+		{
+			UTypes::AddEffectBySurfaceType(this, myProjectile->ProjectileSetting.Effect, GetSurfuceType());
+		}
 	}
 
 	return ActualDamage;

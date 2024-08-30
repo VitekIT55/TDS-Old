@@ -8,11 +8,13 @@
 #include "../Weapon/WeaponDefault.h"
 #include "TPSInventoryComponent.h"
 #include "TPSCharacterHealthComponent.h"
+#include "../Interface/TPS_IGameActor.h"
+#include "../StateEffects/TPS_StateEffect.h"
 
 #include "TPSCharacter.generated.h"
 
 UCLASS(Blueprintable)
-class ATPSCharacter : public ACharacter
+class ATPSCharacter : public ACharacter, public ITPS_IGameActor
 {
 	GENERATED_BODY()
 
@@ -81,9 +83,14 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	TArray<UAnimMontage*> DeadsAnim;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ability")
+	TSubclassOf<UTPS_StateEffect> AbilityEffect;
 
 	//Weapon	
 	AWeaponDefault* CurrentWeapon = nullptr;
+
+	//Effect
+	TArray<UTPS_StateEffect*> Effects;
 
 	//Inputs
 	UFUNCTION()
@@ -138,8 +145,18 @@ public:
 	void TrySwicthNextWeapon();
 	void TrySwitchPreviosWeapon();
 
+	//ability func
+	void TryAbilityEnabled();
+
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly)
 	int32 CurrentIndexWeapon = 0;
+
+	//Interface
+	EPhysicalSurface GetSurfuceType() override;
+	TArray<UTPS_StateEffect*> GetAllCurrentEffects() override;
+	void RemoveEffect(UTPS_StateEffect* RemoveEffect)override;
+	void AddEffect(UTPS_StateEffect* newEffect)override;
+	//End Interface
 
 	UFUNCTION()
 	void CharDead();

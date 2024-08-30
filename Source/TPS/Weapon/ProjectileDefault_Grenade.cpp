@@ -69,16 +69,37 @@ void AProjectileDefault_Grenade::Explose()
 	{
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ProjectileSetting.ExploseSound, GetActorLocation());
 	}
-	
 	TArray<AActor*> IgnoredActor;
 	UGameplayStatics::ApplyRadialDamageWithFalloff(GetWorld(),
 		ProjectileSetting.ExplodeMaxDamage,
-		ProjectileSetting.ExplodeMaxDamage*0.2f,
+		ProjectileSetting.ExplodeMaxDamage * 0.2f,
 		GetActorLocation(),
-		1000.0f,
-		2000.0f,
+		ProjectileSetting.ProjectileMinRadiusDamage,
+		ProjectileSetting.ProjectileMaxRadiusDamage,
 		5,
-		NULL, IgnoredActor,nullptr,nullptr);
+		NULL, IgnoredActor, nullptr, nullptr);
+	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, FString::Printf(TEXT("ExplodeMaxDamage: %f"), ProjectileSetting.ExplodeMaxDamage));
+	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, FString::Printf(TEXT("ProjectileMinRadiusDamage: %f"), ProjectileSetting.ProjectileMinRadiusDamage));
+	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, FString::Printf(TEXT("ProjectileMaxRadiusDamagee: %f"), ProjectileSetting.ProjectileMaxRadiusDamage));
+
+	FVector Origin = GetActorLocation();
+	FCollisionShape Sphere = FCollisionShape::MakeSphere(ProjectileSetting.ProjectileMaxRadiusDamage);
+	TArray<FHitResult> HitResults;
+	bool bHit = GetWorld()->SweepMultiByChannel(
+		HitResults,
+		Origin,
+		Origin,
+		FQuat::Identity,
+		ECC_Visibility,
+		Sphere
+	);
+	for (const FHitResult& Hit : HitResults)
+	{
+		if (Hit.GetActor())
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Blue, FString::Printf(TEXT("Hit Actor: %s"), *Hit.GetActor()->GetName()));
+		}
+	}
 
 	this->Destroy();
 }

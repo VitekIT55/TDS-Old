@@ -35,6 +35,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shield")
 	float ShieldRecoverRate = 0.1f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effect")
+	bool HealthChangeBlock = 0;
+
 	void ChangeHealthValue(float ChangeValue) override;
 
 	float GetCurrentShield();
