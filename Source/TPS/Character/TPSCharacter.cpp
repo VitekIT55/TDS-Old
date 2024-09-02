@@ -551,7 +551,6 @@ void ATPSCharacter::CharDead()
 	}
 
 	//bIsAlive = false;
-	//CharHealthComponent->UTPSHealthComponent::CharIsDead = true;
 
 	//UnPossessed();
 
