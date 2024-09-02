@@ -33,6 +33,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
 	float CoefDamage = 1.0f;
+	UPROPERTY(EditAnywhere)
+	bool CharIsDead = false;
 
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;

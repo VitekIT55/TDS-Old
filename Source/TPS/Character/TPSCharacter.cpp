@@ -545,7 +545,8 @@ void ATPSCharacter::CharDead()
 		GetMesh()->GetAnimInstance()->Montage_Play(DeadsAnim[rnd]);
 	}
 
-	bIsAlive = false;
+	//bIsAlive = false;
+	CharHealthComponent->UTPSHealthComponent::CharIsDead = true;
 
 	UnPossessed();
 
@@ -567,8 +568,9 @@ void ATPSCharacter::EnableRagdoll()
 float ATPSCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	if (bIsAlive)
+	if (!CharHealthComponent->UTPSHealthComponent::CharIsDead)
 	{
+		//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("World delta for current frame equals %f"), GetWorld()->TimeSeconds));
 		CharHealthComponent->ChangeHealthValue(-DamageAmount);
 	}
 

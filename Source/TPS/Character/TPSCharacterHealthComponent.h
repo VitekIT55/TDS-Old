@@ -22,6 +22,7 @@ public:
 
 	FTimerHandle TimerHandle_CollDownShieldTimer;
 	FTimerHandle TimerHandle_ShieldRecoveryRateTimer;
+
 protected:
 
 	float Shield = 100.0f;

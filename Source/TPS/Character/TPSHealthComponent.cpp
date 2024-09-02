@@ -54,8 +54,9 @@ void UTPSHealthComponent::ChangeHealthValue(float ChangeValue)
 	}
 	else
 	{
-		if (Health < 0.0f)
+		if (Health <= 0.0f)
 		{
+			CharIsDead = true;
 			OnDead.Broadcast();
 		}
 	}

@@ -78,8 +78,8 @@ public:
 	bool SprintBlock = 0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float CharacterSpeed = 0;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	bool bIsAlive = true;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	//bool bIsAlive = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	TArray<UAnimMontage*> DeadsAnim;

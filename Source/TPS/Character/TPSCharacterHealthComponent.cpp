@@ -21,7 +21,7 @@ void UTPSCharacterHealthComponent::ChangeHealthValue(float ChangeValue)
 	}
 	else
 	{
-		if (HealthChangeBlock == 0)
+		if (HealthChangeBlock == 0 && UTPSHealthComponent::CharIsDead != 1)
 		{
 			Super::ChangeHealthValue(ChangeValue);
 		}
