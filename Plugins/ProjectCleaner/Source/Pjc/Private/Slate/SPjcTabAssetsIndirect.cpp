@@ -249,8 +249,8 @@ void SPjcTabAssetsIndirect::ListUpdateView()
 	for (const auto& Item : ItemsAll)
 	{
 		if (
-			!Item.IsValid() ||
-			!SearchText.IsEmpty() &&
+			(!Item.IsValid() ||
+			!SearchText.IsEmpty()) &&
 			!Item->FilePath.Contains(SearchStr) &&
 			!Item->Asset.AssetName.ToString().Contains(SearchStr) &&
 			!Item->Asset.PackagePath.ToString().Contains(SearchStr)

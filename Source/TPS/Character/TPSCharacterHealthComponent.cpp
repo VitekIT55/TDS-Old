@@ -7,23 +7,26 @@
 
 void UTPSCharacterHealthComponent::ChangeHealthValue(float ChangeValue)
 {
-	float CurrentDamage = ChangeValue * CoefDamage;
+	if (UTPSHealthComponent::CharIsDead != 1)
+	{
+		float CurrentDamage = ChangeValue * CoefDamage;
 
-	if (Shield > 0.0f && ChangeValue < 0.0f)
-	{
-		ChangeShieldValue(ChangeValue);
-		
-		if (Shield < 0.0f)
+		if (Shield > 0.0f && ChangeValue < 0.0f)
 		{
-			//FX
-			//UE_LOG(LogTemp, Warning, TEXT("UTPSCharacterHealthComponent::ChangeHealthValue - Sheild < 0"));
+			ChangeShieldValue(ChangeValue);
+
+			if (Shield < 0.0f)
+			{
+				//FX
+				//UE_LOG(LogTemp, Warning, TEXT("UTPSCharacterHealthComponent::ChangeHealthValue - Sheild < 0"));
+			}
 		}
-	}
-	else
-	{
-		if (HealthChangeBlock == 0 && UTPSHealthComponent::CharIsDead != 1)
+		else
 		{
-			Super::ChangeHealthValue(ChangeValue);
+			if (HealthChangeBlock == 0)
+			{
+				Super::ChangeHealthValue(ChangeValue);
+			}
 		}
 	}
 }
@@ -59,7 +62,7 @@ void UTPSCharacterHealthComponent::ChangeShieldValue(float ChangeValue)
 
 void UTPSCharacterHealthComponent::CoolDownShieldEnd()
 {
-	if (GetWorld())
+	if (GetWorld() && UTPSHealthComponent::CharIsDead != 1)
 	{		
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle_ShieldRecoveryRateTimer, this, &UTPSCharacterHealthComponent::RecoveryShield, ShieldRecoverRate, true);
 	}	

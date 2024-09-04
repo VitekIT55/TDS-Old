@@ -144,7 +144,7 @@ void ATPSCharacter::MovementTick(float DeltaTime)
 	//GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, FString::Printf(TEXT("AxisY: %f"), AxisY));
 
 	APlayerController* myController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	if (myController)
+	if (myController && !CharHealthComponent->UTPSHealthComponent::CharIsDead)
 	{
 		FHitResult TraceHitResult;
 		myController->GetHitResultUnderCursor(ECC_GameTraceChannel1, true, TraceHitResult);
@@ -538,26 +538,23 @@ void ATPSCharacter::AddEffect(UTPS_StateEffect* newEffect)
 void ATPSCharacter::CharDead()
 {
 	CharHealthComponent->UTPSHealthComponent::CharIsDead = true;
-	UnPossessed();
-	GetCursorToWorld()->SetVisibility(false);
 
 	float TimeAnim = 0.0f;
 	int32 rnd = FMath::RandHelper(DeadsAnim.Num());
 	if (DeadsAnim.IsValidIndex(rnd) && DeadsAnim[rnd] && GetMesh() && GetMesh()->GetAnimInstance())
 	{
 		TimeAnim = DeadsAnim[rnd]->GetPlayLength();
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("TimeAnim: %f, Anim: %i"), TimeAnim, rnd));
 		GetMesh()->GetAnimInstance()->Montage_Play(DeadsAnim[rnd]);
 	}
 
 	//bIsAlive = false;
 
-	//UnPossessed();
+	UnPossessed();
 
 	//Timer rag doll
-	//GetWorldTimerManager().SetTimer(TimerHandle_RagDollTimer, this, &ATPSCharacter::EnableRagdoll, TimeAnim, false);
+	GetWorldTimerManager().SetTimer(TimerHandle_RagDollTimer, this, &ATPSCharacter::EnableRagdoll, TimeAnim, false);
 
-	//GetCursorToWorld()->SetVisibility(false);
+	GetCursorToWorld()->SetVisibility(false);
 }
 
 void ATPSCharacter::EnableRagdoll()
